@@ -1,131 +1,147 @@
-## TeamCode Module
+# swerve-2026
 
-Welcome!
+FTC code for our coaxial swerve drivetrain. Built on the Pedro Pathing quickstart.
 
-This module, TeamCode, is the place where you will write/paste the code for your team's
-robot controller App. This module is currently empty (a clean slate) but the
-process for adding OpModes is straightforward.
+Status: hardware is assembled, nothing is tuned yet. Constants are scaffolded but
+most values are still zeros waiting on tuner output. See the checklist below.
 
-## Creating your own OpModes
+## Drivetrain
 
-The easiest way to create your own OpMode is to copy a Sample OpMode and make it your own.
+Four coaxial swerve pods.
 
-Sample opmodes exist in the FtcRobotController module.
-To locate these samples, find the FtcRobotController module in the "Project/Android" tab.
+| | |
+|---|---|
+| Drive motor | goBILDA 5000-series bare, 12V, 5800 RPM no-load, 1.47 kg-cm |
+| Drive ratio | 6.2:1 motor to wheel, no internal gearbox |
+| Drive encoder | 28 CPR bare, 173.6 ticks per wheel rev |
+| Wheel | ~67.5mm (measure with calipers, the printed parts vary) |
+| Steering servo | SWYFT Speed SR-Servo-01 v1.1, continuous rotation |
+| Steering ratio | 26:28 servo to pod pulley |
+| Steering rate | 161.3 RPM at servo, ~149.8 RPM at pod = ~899 deg/s |
+| Azimuth encoder | MelonBotics nano, magnetic, analog output |
 
-Expand the following tree elements:
- FtcRobotController/java/org.firstinspires.ftc.robotcontroller/external/samples
+Geometry (front of the robot is the short side of the pod / 6-hole channel):
 
-### Naming of Samples
+- Wheelbase 262.96mm, track width 239.35mm
+- Pod positions from center, Pedro coords (+x forward, +y left): `(±131.5, ±119.7)` mm
+- CG centered in x and y, 68mm high
 
-To gain a better understanding of how the samples are organized, and how to interpret the
-naming system, it will help to understand the conventions that were used during their creation.
+Theoretical top speed works out to about 10.8 ft/s. Actual number comes from
+ForwardVelocityTuner.
 
-These conventions are described (in detail) in the sample_conventions.md file in this folder.
+## Electronics
 
-To summarize: A range of different samples classes will reside in the java/external/samples.
-The class names will follow a naming convention which indicates the purpose of each class.
-The prefix of the name will be one of the following:
+Control Hub only so far.
 
-Basic:  	This is a minimally functional OpMode used to illustrate the skeleton/structure
-            of a particular style of OpMode.  These are bare bones examples.
+- 4 drive motors on the motor ports
+- 4 steering servos configured as **continuous rotation**
+- 4 analog encoders, two per port through MelonBotics JST joiner boards. This uses
+  every analog channel on the hub (0-1 and 2-3), so anything else analog needs an
+  Expansion Hub.
 
-Sensor:    	This is a Sample OpMode that shows how to use a specific sensor.
-            It is not intended to drive a functioning robot, it is simply showing the minimal code
-            required to read and display the sensor values.
-
-Robot:	    This is a Sample OpMode that assumes a simple two-motor (differential) drive base.
-            It may be used to provide a common baseline driving OpMode, or
-            to demonstrate how a particular sensor or concept can be used to navigate.
-
-Concept:	This is a sample OpMode that illustrates performing a specific function or concept.
-            These may be complex, but their operation should be explained clearly in the comments,
-            or the comments should reference an external doc, guide or tutorial.
-            Each OpMode should try to only demonstrate a single concept so they are easy to
-            locate based on their name.  These OpModes may not produce a drivable robot.
-
-After the prefix, other conventions will apply:
-
-* Sensor class names are constructed as:    Sensor - Company - Type
-* Robot class names are constructed as:     Robot - Mode - Action - OpModetype
-* Concept class names are constructed as:   Concept - Topic - OpModetype
-
-Once you are familiar with the range of samples available, you can choose one to be the
-basis for your own robot.  In all cases, the desired sample(s) needs to be copied into
-your TeamCode module to be used.
-
-This is done inside Android Studio directly, using the following steps:
-
- 1) Locate the desired sample class in the Project/Android tree.
-
- 2) Right click on the sample class and select "Copy"
-
- 3) Expand the  TeamCode/java folder
-
- 4) Right click on the org.firstinspires.ftc.teamcode folder and select "Paste"
-
- 5) You will be prompted for a class name for the copy.
-    Choose something meaningful based on the purpose of this class.
-    Start with a capital letter, and remember that there may be more similar classes later.
-
-Once your copy has been created, you should prepare it for use on your robot.
-This is done by adjusting the OpMode's name, and enabling it to be displayed on the
-Driver Station's OpMode list.
-
-Each OpMode sample class begins with several lines of code like the ones shown below:
+Config names used throughout the code:
 
 ```
- @TeleOp(name="Template: Linear OpMode", group="Linear Opmode")
- @Disabled
+leftFrontMotor    leftFrontServo    leftFrontEncoder
+rightFrontMotor   rightFrontServo   rightFrontEncoder
+leftBackMotor     leftBackServo     leftBackEncoder
+rightBackMotor    rightBackServo    rightBackEncoder
 ```
 
-The name that will appear on the driver station's "opmode list" is defined by the code:
- ``name="Template: Linear OpMode"``
-You can change what appears between the quotes to better describe your opmode.
-The "group=" portion of the code can be used to help organize your list of OpModes.
+## Libraries
 
-As shown, the current OpMode will NOT appear on the driver station's OpMode list because of the
-  ``@Disabled`` annotation which has been included.
-This line can simply be deleted , or commented out, to make the OpMode visible.
+- FTC SDK 11.1.0
+- Pedro Pathing 2.1.2 — path following. It has native coaxial swerve support, so we
+  are not writing our own kinematics or module classes.
+- SolversLib 0.3.4 (core + pedroPathing) — command scheduler for mechanisms. FTCLib
+  core is commented out in `build.dependencies.gradle` on purpose; having both on the
+  classpath causes duplicate class errors.
+- Panels 1.0.12 — dashboard and telemetry
 
+## Layout
 
+```
+TeamCode/src/main/java/org/firstinspires/ftc/teamcode/
+├── opmodes/            teleop, autos, and diagnostics
+├── pedroPathing/
+│   ├── Constants.java  pod definitions and follower constants  <- most of the work
+│   └── Tuning.java     Pedro's built-in tuners
+├── subsystems/         mechanisms. NOT the drivetrain, the Follower is that
+├── tuning/             our own tuners for mechanisms
+└── util/               helpers
+```
 
-## ADVANCED Multi-Team App management:  Cloning the TeamCode Module
+## Setup
 
-In some situations, you have multiple teams in your club and you want them to all share
-a common code organization, with each being able to *see* the others code but each having
-their own team module with their own code that they maintain themselves.
+```bash
+git clone https://github.com/YOURNAME/swerve-2026.git
+```
 
-In this situation, you might wish to clone the TeamCode module, once for each of these teams.
-Each of the clones would then appear along side each other in the Android Studio module list,
-together with the FtcRobotController module (and the original TeamCode module).
+Open in Android Studio and let Gradle sync. `local.properties` is gitignored and gets
+generated locally, so don't commit it.
 
-Selective Team phones can then be programmed by selecting the desired Module from the pulldown list
-prior to clicking to the green Run arrow.
+## Tuning progress
 
-Warning:  This is not for the inexperienced Software developer.
-You will need to be comfortable with File manipulations and managing Android Studio Modules.
-These changes are performed OUTSIDE of Android Studios, so close Android Studios before you do this.
- 
-Also.. Make a full project backup before you start this :)
+Order matters. Do not skip ahead.
 
-To clone TeamCode, do the following:
+- [ ] Localizer installed and configured (required first — you cannot localize off
+  drive encoders on swerve, the wheels aren't fixed to the chassis)
+- [ ] Robot weighed, `.mass()` filled in
+- [ ] `encoderNames` array updated in Tuning.java (~line 1440)
+- [ ] Pod Config Test passes — correct wheel spins for each button, all encoders read
+- [ ] Analog Min/Max Tuner
+- [ ] Angle offsets via LocalizationTest + alignment tool (radians)
+- [ ] Swerve Offsets Test — servo directions, then motor directions
+- [ ] Swerve Turn Test — encoder inverted flags
+- [ ] Pod PIDF — P and D off the ground, F on the tiles
+- [ ] Re-enable X-lock, then retune zero power acceleration
+- [ ] Localization tuning
+- [ ] Forward velocity + zero power acceleration
+- [ ] Translational and heading PIDs
+- [ ] Field centric teleop
 
-Note: Some names start with "Team" and others start with "team".  This is intentional.
+Measured values go here as we get them:
 
-1)  Using your operating system file management tools, copy the whole "TeamCode"
-    folder to a sibling folder with a corresponding new name, eg: "Team0417".
+```
+                 LF        RF        LB        RB
+analog min       -         -         -         -
+analog max       -         -         -         -
+angle offset     -         -         -         -
+motor dir        -         -         -         -
+servo dir        -         -         -         -
+encoder inv      -         -         -         -
+```
 
-2)  In the new Team0417 folder, delete the TeamCode.iml file.
+## Swerve gotchas
 
-3)  the new Team0417 folder, rename the "src/main/java/org/firstinspires/ftc/teamcode" folder
-    to a matching name with a lowercase 'team' eg:  "team0417".
+Things that are different from mecanum and either cost us time or would have:
 
-4)  In the new Team0417/src/main folder, edit the "AndroidManifest.xml" file, change the line that contains
-         package="org.firstinspires.ftc.teamcode"
-    to be
-         package="org.firstinspires.ftc.team0417"
+- **Predictive braking does not work on swerve.** Too aggressive, causes oscillation
+  because pods can't change direction instantly. Use the PIDF drive algorithm.
+- **No kF on the translational or heading PIDs.** Same oscillation problem.
+- **Skip the lateral tuners.** On swerve they're equivalent to the forward ones, just
+  reuse the values.
+- **Retune zero power acceleration if X-lock changes.** X-lock brakes much harder and
+  the stopping distance shifts a lot.
+- **Low centripetal scaling.** 0.0005 to start. Swerve has better traction so it needs
+  less compensation than mecanum.
+- **Keep bevel gears facing the same direction on all four pods.** Flipping one 180
+  degrees changes its offset and makes debugging miserable.
+- If a pod misbehaves during the direction tests, check that its motor, servo, and
+  encoder are actually all the same physical pod before re-tuning offsets. A wrong
+  harness looks exactly like a bad offset.
 
-5)  Add:    include ':Team0417' to the "/settings.gradle" file.
-    
-6)  Open up Android Studios and clean out any old files by using the menu to "Build/Clean Project""
+## Notes
+
+Worst case reaction time is a 90 degree pod rotation, about 100ms at our steering rate.
+Mecanum is instant because the wheels never turn. X-lock helps here — parked at 45
+degrees, launching in any direction costs 45 degrees instead of 0 or 90, so response is
+slightly slower forward but much better sideways and symmetric overall.
+
+## Reference
+
+- Pedro Pathing docs: https://pedropathing.com/docs/pathing
+- Swerve setup: https://pedropathing.com/docs/pathing/tuning/swerve/swerve-setup
+- Swerve tuning: https://pedropathing.com/docs/pathing/tuning/swerve/swerve-tuning
+- MelonBotics encoder docs: https://docs.melonbotics.com/encoder
+- SolversLib: https://docs.seattlesolvers.com
