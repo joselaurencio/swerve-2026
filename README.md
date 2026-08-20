@@ -74,7 +74,7 @@ TeamCode/src/main/java/org/firstinspires/ftc/teamcode/
 ## Setup
 
 ```bash
-git clone https://github.com/YOURNAME/swerve-2026.git
+git clone https://github.com/joselaurencio/swerve-2026.git
 ```
 
 Open in Android Studio and let Gradle sync. `local.properties` is gitignored and gets
